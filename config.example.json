@@ -1,0 +1,5 @@
+{
+	"token": "token",
+	"file-logging": false,
+	"log-format": "%^%Y-%m-%d %H:%M:%S.%e [%L] [th#%t]%$ : %v"
+}

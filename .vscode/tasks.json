@@ -1,0 +1,32 @@
+{
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "C/C++: g++-10 build active file",
+            "command": "/usr/bin/g++-10",
+            "args": [
+                "-std=c++17",
+                "main.cpp",
+                "andremor.cpp",
+                "util.cpp",
+                "-o",
+                "${fileDirname}/main.out",
+                "$(pkg-config",
+                "--cflags",
+                "--libs",
+                "aegis)"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ],
+    "version": "2.0.0"
+}
