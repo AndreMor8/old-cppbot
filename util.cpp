@@ -19,6 +19,25 @@ vector<string> split(string str, string splitBy) {
     return tokens;
 }
 
+string join(vector<string> arr, string joinwith) {
+    string tosend;
+    int i = 0;
+    for(string thing : arr) {
+        tosend += thing + ((i - 1) == arr.size() ? "" : joinwith);
+        i++;
+    }
+    return tosend;
+}
+
+string reverse_string(string line) {
+	string::reverse_iterator it;
+	string result;
+	for (it = line.rbegin(); it < line.rend(); it++) {
+		result += *it;
+	}
+	return result;
+}
+
 string date(int64_t timestamp) {
     chrono::system_clock::time_point starttime = chrono::system_clock::from_time_t(timestamp / 1000);
     chrono::time_point<std::chrono::system_clock> now_t = chrono::system_clock::now();

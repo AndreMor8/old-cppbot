@@ -23,36 +23,46 @@ void andremor::message_create(gateway::events::message_create message) {
         try {
             core &bot = message.channel.get_guild().get_bot();
             if (command == "server") {
-                guild &server = message.msg.get_guild();
+                aegis::guild &pre_server = message.msg.get_guild();
+                aegis::future<gateway::objects::guild> promise = pre_server.get_guild();
+                promise.wait();
+                gateway::objects::guild server = promise.get();
                 string role_list;
                 string channel_list;
                 using namespace gateway::objects;
-                for (pair<snowflake, role> role : server.get_roles()) {
+                for (role role : server.roles) {
                     if (role_list.length() > 987) break;
-                    if (role.first.gets() == server.guild_id.gets()) continue;
-                    role_list += "<@&" + role.first.gets() + "> ";
+                    if (role.role_id.gets() == server.guild_id.gets()) continue;
+                    role_list += "<@&" + role.role_id.gets() + "> ";
                 }
-                if(role_list.length() == 0) role_list = "*no roles*";
-                for (pair<snowflake, aegis::channel *> channel : server.get_channels()) {
+                if(role_list.empty()) role_list = "*no roles*";
+                for (pair<snowflake, aegis::channel *> channel: pre_server.get_channels()) {
                     if(channel_list.length() > 987) break;
                     channel_list += "<#" + channel.first.gets() + "> ";
                 }
-                embed embed;
-                embed.title("Information about " + server.get_name());
+                gateway::objects::embed embed;
+                embed.title("Information about " + server.name);
                 embed.color(0x00ff00);
                 thumbnail icon;
-                icon.url = "https://cdn.discordapp.com/icons/" + server.guild_id.gets() + "/" + server.get_icon() + ".png?size=4096";
+                icon.url = "https://cdn.discordapp.com/icons/" + server.guild_id.gets() + "/" + server.icon + ".png?size=4096";
                 embed.thumbnail(icon);
+                vector<string> verlevels = { "None", "Low", "Medium", "High", "Very high" };
+                vector<string> explev = { "Disabled", "Only members without roles", "All members" };
                 vector<field> fields;
                 field server_id; server_id.name("ID").value(server.guild_id.gets()).is_inline(true); fields.push_back(server_id);
-                field owner; owner.name("Owner").value("<@!" + server.get_owner().gets() + ">").is_inline(true); fields.push_back(owner);
-                field membercount; membercount.name("Member Count").value(to_string(server.get_member_count())).is_inline(true); fields.push_back(membercount);
-                field roles; roles.name("Roles (" + to_string(server.get_roles().size() - 1) + ")").value(role_list); fields.push_back(roles);
-                field channels; channels.name("Channels").value(channel_list); fields.push_back(channels);
+                field owner; owner.name("Owner").value("<@!" + server.owner_id.gets() + ">").is_inline(true); fields.push_back(owner);
+                field membercount; membercount.name("Member Count").value(to_string(pre_server.get_member_count())).is_inline(true); fields.push_back(membercount);
+                field roles; roles.name("Roles (" + to_string(server.roles.size() - 1) + ")").value(role_list); fields.push_back(roles);
+                field channels; channels.name("Channels (" + to_string(server.channels.size()) + ")").value(channel_list); fields.push_back(channels);
                 field creation; creation.name("Server creation time").value(to_iso8601(server.guild_id.get_time()) + "\n\n" + date(server.guild_id.get_time())).is_inline(true); fields.push_back(creation);
-                field region; region.name("Region").value(server.get_region()).is_inline(true); fields.push_back(region);
-                field voicestates; voicestates.name("Voice states").value(to_string(server.get_voicestates().size())).is_inline(true); fields.push_back(voicestates);
+                field region; region.name("Region").value(server.region).is_inline(true); fields.push_back(region);
+                field voicestates; voicestates.name("Voice states").value(to_string(server.voice_states.size())).is_inline(true); fields.push_back(voicestates);
+                field verification; verification.name("Server Verification").value(verlevels[server.verification_level]).is_inline(true); fields.push_back(verification);
+                field explici; explici.name("Explicit content filter").value(explev[server.explicit_content_filter]).is_inline(true); fields.push_back(explici);
+                string featurestext = join(server.features, ", ");
+                field features; features.name("Features").value(featurestext.empty() ? "*Without features*" : featurestext).is_inline(true); fields.push_back(features);
                 embed.fields(fields);
+
                 message.channel.create_message(create_message_t().content("Server information").embed(embed));
             }
             if (command == "userinfo") {
@@ -120,7 +130,22 @@ void andremor::message_create(gateway::events::message_create message) {
                     } else message.channel.create_message(create_message_t().content("Invalid number"));
                 }
             }
-            
+            if (command == "reverse") {
+                if(!(args.empty())) {
+                    string reversed = reverse_string(join(args, " "));
+                    message.channel.create_message(create_message_t().content(reversed));
+                } else message.channel.create_message(create_message_t().content("Put something"));
+            }
+            if (command == "say") {
+                if(!(args.empty())) {
+                    string tosay = join(args, " ");
+                    message.channel.create_message(create_message_t().content(tosay));
+                } else message.channel.create_message(create_message_t().content("Put something"));
+            }
+        } catch (aegis::exception &err) {
+            string err_string = err.what();
+            message.channel.create_message("Error: " + err_string);
+            cout << err_string << endl;
         } catch (std::exception &err) {
             string err_string = err.what();
             message.channel.create_message("Error: " + err_string);
