@@ -9,6 +9,8 @@
                 "main.cpp",
                 "andremor.cpp",
                 "util.cpp",
+                "./lib/CPUData.cpp",
+                "./lib/CPUSnapshot.cpp",
                 "-o",
                 "${fileDirname}/main.out",
                 "$(pkg-config",
