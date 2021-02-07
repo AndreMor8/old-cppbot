@@ -8,10 +8,12 @@ using namespace aegis;
 using namespace std;
 using namespace utility;
 
-void andremor::message_create(gateway::events::message_create message)
+void andremor::message_create(gateway::events::message_create message) noexcept
 {
+    if (message.get_user().is_bot())
+        return;
     string content = message.msg.get_content();
-    if (content.length() == 0)
+    if (content.empty())
         return;
     string PREFIX = "g!";
     size_t found = content.find(PREFIX);
@@ -20,15 +22,15 @@ void andremor::message_create(gateway::events::message_create message)
     if (found != 0)
         return;
     content.erase(0, PREFIX.length());
-    if (content.length() == 0)
+    if (content.empty())
         return;
     vector<string> args = split(content, " ");
     string command = args[0];
     args.erase(args.begin());
-    AEGIS_TRACE(bot.log, command + "\n");
+    core &bot = message.channel.get_guild().get_bot();
+    bot.log->info(command);
     try
     {
-        core &bot = message.channel.get_guild().get_bot();
         if (command == "server")
         {
             aegis::guild &pre_server = message.msg.get_guild();
@@ -43,7 +45,7 @@ void andremor::message_create(gateway::events::message_create message)
                     break;
                 if (role.role_id.gets() == server.guild_id.gets())
                     continue;
-                role_list += "<@&" + role.role_id.gets() + "> ";
+                role_list += role.get_mention();
             }
             if (role_list.empty())
                 role_list = "*no roles*";
@@ -102,52 +104,66 @@ void andremor::message_create(gateway::events::message_create message)
         }
         if (command == "userinfo")
         {
-            user &usuario = message.get_user();
-            using namespace gateway::objects;
-            embed embed;
-            embed.title("Information about " + usuario.get_full_name());
-            embed.color(0x21afb4);
-            thumbnail avatar;
-            avatar.url = "https://cdn.discordapp.com/avatars/" + usuario.get_id().gets() + "/" + usuario.get_avatar() + ".png?size=4096";
-            embed.thumbnail(avatar);
-            string voicestatustext;
-            vector<field> fields;
-            field id;
-            id.name("ID").value(usuario.get_id().gets()).is_inline(true);
-            fields.push_back(id);
-            field is_bot;
-            is_bot.name("Bot?").value(usuario.is_bot() ? "Yes" : "No").is_inline(true);
-            fields.push_back(is_bot);
-            field created;
-            created.name("Account create time").value(to_iso8601(usuario.get_id().get_time()) + "\n\n" + date(usuario.get_id().get_time())).is_inline(true);
-            fields.push_back(created);
-            aegis::user::guild_info member = usuario.get_guild_info(message.channel.get_guild().guild_id);
-            voicestatustext += "Muted: " + string(member.mute ? "Yes" : "No") + "\nDeafened: " + string(member.deaf ? "Yes" : "No");
-            field nickname;
-            nickname.name("Server nick").value(member.nickname.has_value() ? member.nickname.value() : "*none*").is_inline(true);
-            fields.push_back(nickname);
-            field joined;
-            joined.name("Joined time").value(to_iso8601(member.id.get_time()) + "\n\n" + date(member.id.get_time())).is_inline(true);
-            fields.push_back(joined);
-            field voicestatus;
-            voicestatus.name("Voice status").value(voicestatustext).is_inline(true);
-            fields.push_back(voicestatus);
-            string rolelist;
-            for (int i = 0; i < member.roles.size(); i++)
+            snowflake id_user = get_snowflake(args.empty() ? message.msg.get_author_id().gets() : args[0], message.msg.get_guild());
+            auto usuario = message.msg.get_guild().find_member(id_user);
+            if (usuario == nullptr)
+                message.channel.create_message("Invalid user!");
+            else
             {
-                if (rolelist.length() > 987)
-                    break;
-                if (member.roles[i].gets() == message.channel.get_guild().guild_id.gets())
-                    continue;
-                rolelist += "<@&" + member.roles[i].gets() + "> ";
+                using namespace gateway::objects;
+                embed embed;
+                embed.title("Information about " + usuario->get_full_name());
+                embed.color(0x21afb4);
+                thumbnail avatar;
+                if (usuario->get_avatar().empty())
+                {
+                    avatar.url = "https://cdn.discordapp.com/embed/avatars/" + to_string(usuario->get_discriminator() % 5) + ".png";
+                    embed.thumbnail(avatar);
+                }
+                else
+                {
+                    avatar.url = "https://cdn.discordapp.com/avatars/" + usuario->get_id().gets() + "/" + usuario->get_avatar() + ".png?size=4096";
+                    embed.thumbnail(avatar);
+                }
+                string voicestatustext;
+                vector<field> fields;
+                field id;
+                id.name("ID").value(usuario->get_id().gets()).is_inline(true);
+                fields.push_back(id);
+                field is_bot;
+                is_bot.name("Bot?").value(usuario->is_bot() ? "Yes" : "No").is_inline(true);
+                fields.push_back(is_bot);
+                field created;
+                created.name("Account create time").value(to_iso8601(usuario->get_id().get_time()) + "\n\n" + date(usuario->get_id().get_time())).is_inline(true);
+                fields.push_back(created);
+                aegis::user::guild_info member = usuario->get_guild_info(message.channel.get_guild().guild_id);
+                voicestatustext += "Muted: " + string(member.mute ? "Yes" : "No") + "\nDeafened: " + string(member.deaf ? "Yes" : "No");
+                field nickname;
+                nickname.name("Server nick").value(member.nickname.has_value() ? member.nickname.value() : "*none*").is_inline(true);
+                fields.push_back(nickname);
+                field joined;
+                joined.name("Joined time").value(to_iso8601(member.id.get_time()) + "\n\n" + date(member.id.get_time())).is_inline(true);
+                fields.push_back(joined);
+                field voicestatus;
+                voicestatus.name("Voice status").value(voicestatustext).is_inline(true);
+                fields.push_back(voicestatus);
+                string rolelist;
+                for (int i = 0; i < member.roles.size(); i++)
+                {
+                    if (rolelist.length() > 987)
+                        break;
+                    if (member.roles[i].gets() == message.channel.get_guild().guild_id.gets())
+                        continue;
+                    rolelist += "<@&" + member.roles[i].gets() + "> ";
+                }
+                if (rolelist.empty())
+                    rolelist = "*no roles*";
+                field rolefield;
+                rolefield.name("Roles (" + to_string(member.roles.size() - 1) + ")").value(rolelist);
+                fields.push_back(rolefield);
+                embed.fields(fields);
+                message.channel.create_message(create_message_t().embed(embed));
             }
-            if (rolelist.length() == 0)
-                rolelist = "*no roles*";
-            field rolefield;
-            rolefield.name("Roles (" + to_string(member.roles.size() - 1) + ")").value(rolelist);
-            fields.push_back(rolefield);
-            embed.fields(fields);
-            message.channel.create_message(create_message_t().embed(embed));
         }
         if (command == "hola")
         {
@@ -159,10 +175,18 @@ void andremor::message_create(gateway::events::message_create message)
         }
         if (command == "file")
         {
-            rest::aegis_file archivo;
-            archivo.name = "hola.txt";
-            archivo.data = {'U', 'n', ' ', 'a', 'r', 'c', 'h', 'i', 'v', 'o', ' ', 'e', 'n', ' ', 'C', '+', '+'};
-            message.channel.create_message(create_message_t().file(archivo));
+            if (args.empty())
+                message.channel.create_message("Usage: `file <name> <args...>`");
+            else
+            {
+                vector<string> final_text = vector_slice(args, 1);
+                if (final_text.empty())
+                    message.channel.create_message("Put something for your file");
+                rest::aegis_file archivo;
+                archivo.name = args[0] + ".txt";
+                archivo.data = to_char_vector(join(final_text, " "));
+                message.channel.create_message(create_message_t().file(archivo));
+            }
         }
         if (command == "stats")
         {
@@ -176,9 +200,9 @@ void andremor::message_create(gateway::events::message_create message)
         {
             int64_t i64 = to_number(args.empty() ? "10" : args[0], 4);
             size_t length = i64;
-            if (!(length > 1950))
+            if (length < 1950)
             {
-                if (!(length < 1))
+                if (length > 1)
                 {
                     string result = random_string(length);
                     message.channel.create_message(create_message_t().content(result));
@@ -212,57 +236,106 @@ void andremor::message_create(gateway::events::message_create message)
         }
         if (command == "kick")
         {
-            guild &server = message.msg.get_guild();
-            if(args.empty()) message.channel.create_message("Mention or put someone's ID.");
-            snowflake userID;
-            if(!message.msg.mentions.empty()) userID = message.msg.mentions[0];
-            else {
-                try {
-                    int64_t id = to_number(args[0], 20);
-                    userID = snowflake(id);
-                } catch (...) {
-                    message.channel.create_message("Invalid ID!");
-                    return;
+            auto bot_perms = message.msg.get_guild().perms();
+            auto perms = message.msg.get_guild().get_permissions(message.get_user(), message.channel);
+            if (perms.can_kick() && bot_perms.can_kick())
+            {
+                if (args.empty())
+                    message.channel.create_message("Mention or put someone's ID.");
+                else
+                {
+                    guild &server = message.msg.get_guild();
+                    snowflake userID = get_snowflake(args[0], message.msg.get_guild());
+                    if (userID.gets() == "0")
+                        message.channel.create_message("Invalid ID!");
+                    else
+                    {
+                        auto promise = server.remove_guild_member(userID);
+                        auto res = promise.get();
+                        if (res.success())
+                            message.channel.create_message("I've kicked that member.");
+                        else
+                            message.channel.create_message(res.content);
+                    }
                 }
             }
-            auto promise = server.remove_guild_member(userID);
-            auto res = promise.get();
-            if (res.success()) message.channel.create_message("I've kicked that member.");
-            else message.channel.create_message(res.content);
+            else
+            {
+                message.channel.create_message("You or I don't have permissions.");
+            }
         }
         if (command == "ban")
         {
-            guild &server = message.msg.get_guild();
-            if(args.empty()) message.channel.create_message("Mention or put someone's ID.");
-            snowflake userID;
-            if(!message.msg.mentions.empty()) userID = message.msg.mentions[0];
-            else {
-                try {
-                    int64_t id = to_number(args[0], 20);
-                    userID = snowflake(id);
-                } catch (...) {
-                    message.channel.create_message("Invalid ID!");
-                    return;
+            auto bot_perms = message.msg.get_guild().perms();
+            auto perms = message.msg.get_guild().get_permissions(message.get_user(), message.channel);
+            if (perms.can_ban() && bot_perms.can_ban())
+            {
+                if (args.empty())
+                    message.channel.create_message("Mention or put someone's ID.");
+                else
+                {
+                    guild &server = message.msg.get_guild();
+                    snowflake userID = get_snowflake(args[0], message.msg.get_guild());
+                    if (userID.gets() == "0")
+                        message.channel.create_message("Invalid ID!");
+                    else
+                    {
+                        vector<string> vector_reason = vector_slice(args, 1);
+                        auto promise = server.create_guild_ban(userID, 0, vector_reason.empty() ? "" : join(vector_reason, " "));
+                        auto res = promise.get();
+                        if (res.success())
+                            message.channel.create_message("I've banned that member.");
+                        else
+                            message.channel.create_message(res.content);
+                    }
                 }
             }
-            vector<string> vector_reason = vector_slice(args, 1);
-            auto promise = server.create_guild_ban(userID, 0, vector_reason.empty() ? "" : join(vector_reason, " "));
-            auto res = promise.get();
-            if (res.success()) message.channel.create_message("I've banned that member.");
-            else message.channel.create_message(res.content);
+            else
+            {
+                message.channel.create_message("You or I don't have permissions.");
+            }
+        }
+        if (command == "purge")
+        {
+            auto bot_perms = message.channel.perms();
+            auto perms = message.msg.get_guild().get_permissions(message.get_user(), message.channel);
+            if (perms.can_manage_messages() && bot_perms.can_manage_messages())
+            {
+                if (args.empty())
+                    message.channel.create_message("Usage: purge <number>");
+                else
+                {
+                    int16_t _amount = to_i16(args[0], 3);
+                    size_t amount = _amount;
+                    if (amount > 100)
+                        message.channel.create_message("Only 100 messages at a time");
+                    else if (amount < 1)
+                        message.channel.create_message("Invalid amount!");
+                    else
+                    {
+                        auto algo = message.msg.delete_message();
+                        algo.wait();
+                        message.channel.create_message("Mañana hago este comando");
+                    }
+                }
+            }
+            else
+            {
+                message.channel.create_message("You or I don't have permissions.");
+            }
         }
     }
     catch (aegis::exception const *err)
     {
         string err_string = err->what();
         message.channel.create_message("Error: " + err_string);
-        cout << err_string << endl;
+        bot.log->error(err_string);
     }
     catch (std::exception const *err)
     {
         string err_string = err->what();
         message.channel.create_message("Error: " + err_string);
-        cout << err_string << endl;
+        bot.log->error(err_string);
     }
     catch (string err)
     {
@@ -271,10 +344,7 @@ void andremor::message_create(gateway::events::message_create message)
     catch (...)
     {
         message.channel.create_message(create_message_t().content("Some unknown error happened!"));
+        bot.log->error("Some unknown error happened");
     }
     return;
-}
-void andremor::ready(gateway::events::ready obj)
-{
-    cout << obj.user.username << "#" << obj.user.discriminator << " is running!" << endl;
 }

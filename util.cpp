@@ -1,4 +1,5 @@
 #include "lib/CPUSnapshot.h"
+#include <aegis.hpp>
 #include <string>
 #include <vector>
 #include <chrono>
@@ -6,14 +7,20 @@
 #include <future>
 using namespace std;
 
-vector<string> vector_slice(vector<string> arr, int i) {
+vector<char> to_char_vector(string input)
+{
+    return vector<char>(input.begin(), input.end());
+}
+
+vector<string> vector_slice(vector<string> arr, int i)
+{
     return vector<string>(arr.begin() + i, arr.end());
 }
 
 string string_round(float var)
 {
     char str[40];
-    sprintf(str, "%.2f", var); 
+    sprintf(str, "%.2f", var);
     return str;
 }
 
@@ -30,6 +37,20 @@ future<string> get_cpu_usage()
         float usage = 100.f * ACTIVE_TIME / TOTAL_TIME;
         return string_round(usage);
     });
+}
+
+int16_t to_i16(string str, int length)
+{
+    string myThing = "Invalid number!";
+    if (str.length() > length)
+        throw myThing;
+    std::istringstream iss(str);
+    int16_t i16;
+    iss >> i16;
+    if (iss.fail())
+        throw myThing;
+    else
+        return i16;
 }
 
 int64_t to_number(string str, int length)
@@ -126,4 +147,51 @@ string date(int64_t timestamp)
         ss << m << " minutes, ";
     ss << s << " seconds ";
     return ss.str();
+}
+//From aegis.cpp's example.cpp
+aegis::snowflake get_snowflake(const string name, aegis::guild &_guild) noexcept
+{
+    if (name.empty())
+        return 0;
+    try
+    {
+        if (name[0] == '<')
+        {
+            std::string::size_type pos = name.find_first_of('>');
+            if (pos == std::string::npos)
+                return 0;
+            if (name[2] == '!')
+                return std::stoull(std::string{name.substr(3, pos - 1)});
+            else if (name[2] == '&')
+                return std::stoull(std::string{name.substr(3, pos - 1)});
+            else if (name[1] == '#')
+                return std::stoull(std::string{name.substr(2, pos - 1)});
+            else
+                return std::stoull(std::string{name.substr(2, pos - 1)});
+        }
+        else if (std::isdigit(name[0]))
+        {
+            return std::stoull(std::string{name});
+        }
+        else
+        {
+            std::string::size_type n = name.find('#');
+            if (n != std::string::npos)
+            {
+                for (auto &m : _guild.get_members())
+                    if (m.second->get_full_name() == name)
+                        return {m.second->get_id()};
+                return 0;
+            }
+            return 0;
+        }
+    }
+    catch (std::invalid_argument &)
+    {
+        return 0;
+    }
+    catch (...)
+    {
+        return 0;
+    }
 }
