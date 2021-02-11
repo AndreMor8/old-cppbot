@@ -8,10 +8,30 @@ using namespace aegis;
 using namespace std;
 using namespace utility;
 
+void andremor::set_bot(aegis::core &bot) noexcept
+{
+    this->_bot = &bot;
+}
+
 void andremor::message_create(gateway::events::message_create message) noexcept
 {
+    core & bot = *_bot;
     if (message.get_user().is_bot())
+    {
+        if (message.get_user().get_id() == bot.self()->get_id())
+        {
+            if (message.msg.nonce == checktime)
+            {
+                ws_checktime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count() - checktime;
+                {
+                    std::lock_guard<std::mutex> lk(m_ping_test);
+                    cv_ping_test.notify_all();
+                }
+                return;
+            }
+        }
         return;
+    }
     string content = message.msg.get_content();
     if (content.empty())
         return;
@@ -27,7 +47,6 @@ void andremor::message_create(gateway::events::message_create message) noexcept
     vector<string> args = split(content, " ");
     string command = args[0];
     args.erase(args.begin());
-    core &bot = message.channel.get_guild().get_bot();
     bot.log->info(command);
     try
     {
@@ -324,6 +343,19 @@ void andremor::message_create(gateway::events::message_create message) noexcept
                 message.channel.create_message("You or I don't have permissions.");
             }
         }
+        if (command == "ping")
+        {
+            unique_lock<mutex> lk(m_ping_test);
+            checktime = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now().time_since_epoch()).count();
+
+            auto msg = message.channel.create_message("Pong", checktime).get();
+            string to_edit = fmt::format("Ping from REST: {}ms", (chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now().time_since_epoch()).count() - checktime));
+            msg.edit(to_edit);
+            if (cv_ping_test.wait_for(lk, 5s) == std::cv_status::no_timeout)
+                msg.edit(fmt::format("{}\n\nPing from WS: {}ms", to_edit, ws_checktime));
+            else
+                msg.edit(fmt::format("{}\n\nPing from WS: Not available", to_edit));
+        }
     }
     catch (aegis::exception const *err)
     {
@@ -347,4 +379,9 @@ void andremor::message_create(gateway::events::message_create message) noexcept
         bot.log->error("Some unknown error happened");
     }
     return;
+}
+
+void andremor::ready(gateway::events::ready obj) noexcept {
+    core & bot = *_bot;
+    bot.log->info(obj.user.username + "#" + obj.user.discriminator + " is running!");
 }
