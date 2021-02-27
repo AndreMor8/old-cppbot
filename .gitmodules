@@ -1,0 +1,6 @@
+[submodule "lib/cpp-dotenv"]
+	path = lib/cpp-dotenv
+	url = https://github.com/adeharo9/cpp-dotenv
+[submodule "lib/cpu-stat"]
+	path = lib/cpu-stat
+	url = https://github.com/vivaladav/cpu-stat

@@ -1,4 +1,4 @@
-#include "lib/CPUSnapshot.h"
+#include <CPUSnapshot.h>
 #include <aegis.hpp>
 #include <string>
 #include <vector>

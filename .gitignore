@@ -1,2 +1,4 @@
-config.json
-main.out
+build/
+.env
+.vscode
+bin/

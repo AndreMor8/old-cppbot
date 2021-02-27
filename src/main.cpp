@@ -1,9 +1,12 @@
-#include "andremor.hpp"
+#include "dotenv.h"
+#include <andremor.hpp>
+
 using namespace aegis;
+using namespace dotenv;
 
 int main(int argc, char* argv[]) {
-
-    core bot;
+    env.load_dotenv();
+    core bot(create_bot_t().token(env["DISCORD_TOKEN"]).log_level(spdlog::level::info).intents(32767));
     bot.wsdbg = true;
     andremor andremor_instance;
     andremor_instance.set_bot(bot);
