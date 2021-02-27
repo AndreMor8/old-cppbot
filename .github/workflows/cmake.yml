@@ -3,7 +3,6 @@ name: CMake
 on: [push]
 
 env:
-  BUILD_TYPE: Release
   CXX: g++
 jobs:
   build:
@@ -18,9 +17,9 @@ jobs:
       run: sudo bash ./install-deps.sh
     - name: Install aegis.cpp to system
       working-directory: ${{github.workspace}}/aegis.cpp
-      run: mkdir -p build && cd build && CXX=$CXX cmake -DCMAKE_CXX_STANDARD=17 .. --config $BUILD_TYPE && make -j1 && sudo make install
+      run: mkdir -p build && cd build && CXX=$CXX cmake -DCMAKE_CXX_STANDARD=17 .. && make -j1 && sudo make install
     - name: Test project build
-      run: mkdir -p build && cd build && cmake .. --config $BUILD_TYPE && make -j1
+      run: mkdir -p build && cd build && cmake .. && make -j1
     - name: Show file information
       working-directory: ${{github.workspace}}/bin
       run: ls -l
