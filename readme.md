@@ -1,5 +1,6 @@
 Made with [aegis.cpp](https://github.com/zeroxs/aegis.cpp)
-It was made to work on Linux systems
+
+It was made to work on Linux systems.
 
 # Build
 
