@@ -12,6 +12,11 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: recursive
+      
+    - name: Install MongoDB C Driver
+      run: sudo apt install -y libsasl2-dev && wget https://github.com/mongodb/mongo-c-driver/releases/download/1.17.4/mongo-c-driver-1.17.4.tar.gz && tar xzf mongo-c-driver-1.17.4.tar.gz && cd mongo-c-driver-1.17.4 && mkdir cmake-build && cd cmake-build && cmake -DENABLE_AUTOMATIC_INIT_AND_CLEANUP=OFF .. && sudo cmake --build . --target install
+    - name: Install MongoDB C++ Driver
+      run: curl -OL https://github.com/mongodb/mongo-cxx-driver/releases/download/r3.6.2/mongo-cxx-driver-r3.6.2.tar.gz && tar -xzf mongo-cxx-driver-r3.6.2.tar.gz && cd mongo-cxx-driver-r3.6.2/build && cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local && sudo cmake --build . --target EP_mnmlstc_core && sudo cmake --build . --target install
     - name: Recursively clone aegis.cpp
       run: git clone --recursive https://github.com/zeroxs/aegis.cpp
     - name: Install aegis.cpp dependencies

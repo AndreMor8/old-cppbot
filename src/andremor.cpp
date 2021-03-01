@@ -1,5 +1,6 @@
 #include <andremor.hpp>
 #include <util.hpp>
+#include <db.hpp>
 #include <aegis.hpp>
 #include <aegis/utility.hpp>
 
@@ -15,7 +16,8 @@ void andremor::set_bot(aegis::core &bot) noexcept
 
 void andremor::message_create(gateway::events::message_create message) noexcept
 {
-    core & bot = *_bot;
+    aegis::core &bot = *_bot;
+    myDb &mongo_client = *_mongo_client;
     if (message.get_user().is_bot())
     {
         if (message.get_user().get_id() == bot.self()->get_id())
@@ -356,8 +358,76 @@ void andremor::message_create(gateway::events::message_create message) noexcept
             else
                 msg.edit(fmt::format("{}\n\nPing from WS: Not available", to_edit));
         }
+        if (command == "add-note")
+        {
+            string to_add = join(args, " ");
+            if (to_add.empty())
+            {
+                message.channel.create_message("Put something");
+            }
+            else
+            {
+                mongo_client.add_note(message.get_user().get_id().gets(), join(args, " "));
+                message.channel.create_message("I've added the note");
+            }
+        }
+        if (command == "delete-note")
+        {
+            if (args[0].empty())
+                message.channel.create_message("Put the note number to delete");
+            else
+            {
+                if (args[0] == "all")
+                {
+                    mongo_client.delete_all_notes(message.get_user().get_id().gets());
+                    message.channel.create_message("Note deleted!");
+                }
+                else
+                {
+                    mongo_client.delete_note(message.get_user().get_id().gets(), stoi(args[0]));
+                    message.channel.create_message("Note deleted!");
+                }
+            }
+        }
+        if (command == "edit-note") {
+            if(args[0].empty() || args[1].empty()) message.channel.create_message("Usage: `edit-note <number> <new_note>`");
+            else {
+                mongo_client.edit_note(message.get_user().get_id().gets(), stoi(args[0]), join(vector_slice(args, 1), " "));
+                message.channel.create_message("Note edited!");
+            }
+        }
+        if (command == "notes")
+        {
+            using namespace gateway::objects;
+            vector<string> notes = mongo_client.get_notes(message.get_user().get_id().gets());
+            embed embed;
+            embed.title("Notes");
+            embed.color(0xff54a7);
+            embed.timestamp();
+            vector<field> fields;
+            int quantity = 0;
+            for (std::string note : notes)
+            {
+                quantity++;
+                field note_field;
+                note_field.name("#" + to_string(quantity)).value(note);
+                fields.push_back(note_field);
+            }
+            embed.fields(fields);
+            message.channel.create_message(create_message_t().embed(embed));
+        }
+    }
+    catch (string err)
+    {
+        message.channel.create_message(err);
     }
     catch (aegis::exception const *err)
+    {
+        string err_string = err->what();
+        message.channel.create_message("Error: " + err_string);
+        bot.log->error(err_string);
+    }
+    catch (std::invalid_argument const *err)
     {
         string err_string = err->what();
         message.channel.create_message("Error: " + err_string);
@@ -369,10 +439,6 @@ void andremor::message_create(gateway::events::message_create message) noexcept
         message.channel.create_message("Error: " + err_string);
         bot.log->error(err_string);
     }
-    catch (string err)
-    {
-        message.channel.create_message(err);
-    }
     catch (...)
     {
         message.channel.create_message(create_message_t().content("Some unknown error happened!"));
@@ -381,7 +447,13 @@ void andremor::message_create(gateway::events::message_create message) noexcept
     return;
 }
 
-void andremor::ready(gateway::events::ready obj) noexcept {
-    core & bot = *_bot;
+void andremor::ready(gateway::events::ready obj) noexcept
+{
+    aegis::core &bot = *_bot;
     bot.log->info(obj.user.username + "#" + obj.user.discriminator + " is running!");
+}
+
+void andremor::set_mongo_client(myDb &the_client) noexcept
+{
+    this->_mongo_client = &the_client;
 }
