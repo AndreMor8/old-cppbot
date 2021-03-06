@@ -16,9 +16,9 @@ jobs:
     - name: Install MongoDB C Driver
       run: sudo apt install -y libsasl2-dev && wget https://github.com/mongodb/mongo-c-driver/releases/download/1.17.4/mongo-c-driver-1.17.4.tar.gz && tar xzf mongo-c-driver-1.17.4.tar.gz && cd mongo-c-driver-1.17.4 && mkdir cmake-build && cd cmake-build && cmake -DENABLE_AUTOMATIC_INIT_AND_CLEANUP=OFF .. && sudo cmake --build . --target install
     - name: Install MongoDB C++ Driver
-      run: curl -OL https://github.com/mongodb/mongo-cxx-driver/releases/download/r3.6.2/mongo-cxx-driver-r3.6.2.tar.gz && tar -xzf mongo-cxx-driver-r3.6.2.tar.gz && cd mongo-cxx-driver-r3.6.2/build && cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local && sudo cmake --build . --target EP_mnmlstc_core && sudo cmake --build . --target install
+      run: curl -OL https://github.com/mongodb/mongo-cxx-driver/releases/download/r3.6.2/mongo-cxx-driver-r3.6.2.tar.gz && tar -xzf mongo-cxx-driver-r3.6.2.tar.gz && cd mongo-cxx-driver-r3.6.2/build && cmake .. -DCMAKE_CXX_STANDARD=17 -DCMAKE_INSTALL_PREFIX=/usr/local && sudo cmake --build . --target install
     - name: Install aegis.cpp
-      run: git clone --recursive https://github.com/zeroxs/aegis.cpp && cd aegis.cpp && sudo CXX=$CXX bash ./install-deps.sh && mkdir -p build && cd build && CXX=$CXX cmake -DCMAKE_CXX_STANDARD=17 .. && make -j1 && sudo make install
+      run: git clone --recursive https://github.com/zeroxs/aegis.cpp && cd aegis.cpp && sudo CXX=$CXX bash ./install-deps.sh && mkdir -p build && cd build && CXX=$CXX cmake -DCMAKE_CXX_STANDARD=17 .. && cmake --build . --target install
     - name: Test project build
       run: mkdir -p build && cd build && CXX=$CXX cmake .. && cmake --build .
     - name: Show file information

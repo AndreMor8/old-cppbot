@@ -1,0 +1,6 @@
+build/
+bin/
+.vscode/
+.env.example
+.github/
+readme.md

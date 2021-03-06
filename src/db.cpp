@@ -88,7 +88,7 @@ std::vector<std::string> myDb::get_notes(std::string user_id) {
     cursor notes = this->db->collection("notes").find(document{} << "user_id" << open_document << "$eq" << user_id << close_document << finalize);
     std::vector<std::string> to_send;
     for(auto doc : notes) {
-        to_send.push_back(doc["note"].get_utf8().value.to_string());
+        to_send.push_back(doc["note"].get_utf8().value.data());
     }
     return to_send;
 }
