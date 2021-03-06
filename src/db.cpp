@@ -10,9 +10,6 @@
 #include <bsoncxx/builder/stream/helpers.hpp>
 #include <bsoncxx/builder/stream/document.hpp>
 #include <bsoncxx/builder/stream/array.hpp>
-#include <nlohmann/json.hpp>
-
-using json = nlohmann::json;
 
 using bsoncxx::builder::stream::close_array;
 using bsoncxx::builder::stream::close_document;
