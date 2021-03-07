@@ -22,7 +22,7 @@ Example
 >```
 
 * Install MongoDB C and C++ driver to the system.
-* 
+
 http://mongoc.org/libmongoc/current/installing.html
 
 http://mongocxx.org/mongocxx-v3/installation/linux/
