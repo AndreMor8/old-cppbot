@@ -14,13 +14,17 @@ And voila, you will have the bot running.
 # Build
 
 **Prepare all CMake build environments with option `-DCMAKE_CXX_STANDARD=17`**
+
 Example
+
 >```bash
 >cmake .. -DCMAKE_CXX_STANDARD=17
 >```
 
 * Install MongoDB C and C++ driver to the system.
+* 
 http://mongoc.org/libmongoc/current/installing.html
+
 http://mongocxx.org/mongocxx-v3/installation/linux/
 
 * Recursively clone `aegis.cpp` repository
