@@ -1,4 +1,4 @@
-Made with [aegis.cpp](https://github.com/zeroxs/aegis.cpp)
+Made with [aegis.cpp](https://github.com/zeroxs/aegis.cpp) (now discontinued)
 
 It was made to work on Linux systems.
 
